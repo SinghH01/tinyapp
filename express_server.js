@@ -18,6 +18,12 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+//Render "/urls" and pass data
+app.get("/urls", (req, res) => {
+  const tempelateVars = {urls: urlDatabase};
+  res.render("urls_index", tempelateVars);
+});
+
 // Send JSON string representing the entire urlDatabase object
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
