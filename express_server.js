@@ -24,6 +24,12 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", tempelateVars);
 });
 
+//To display single url and its shortened form
+app.get("/urls/:shortURL", (req, res) => {
+  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  res.render("urls_show", templateVars);
+});
+
 // Send JSON string representing the entire urlDatabase object
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
