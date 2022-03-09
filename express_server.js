@@ -1,7 +1,7 @@
 // Require express library
 const express = require("express");
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 3001; // default port 8080
 
 // Require body parser
 const bodyParser = require("body-parser");
@@ -12,28 +12,26 @@ app.set("view engine", "ejs");
 
 
 // URL Databse Object
-const urlDatabase = {
+let urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
-// Send "Hello" to browser when in homepage (root path)
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
 
-//Render "/urls" and pass data
+//Display all urls in browser
 app.get("/urls", (req, res) => {
   const tempelateVars = {urls: urlDatabase};
   res.render("urls_index", tempelateVars);
 });
 
+//Add new longURLS and it's corresponding randomly generated short url in database using form
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
-  res.send(generateRandomString());         // Respond with 'Ok' (we will replace this)
+  let random = generateRandomString();
+  urlDatabase[random] = req.body.longURL;
+  res.redirect(`/urls/${random}`);
 });
 
-// GET route to render the urls_new.ejs
+// Render the page to add new url's
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
@@ -41,19 +39,24 @@ app.get("/urls/new", (req, res) => {
 //To display single url and its shortened form
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  res.render("urls_show", templateVars);
+  //If a client requests a non-existent shortURL
+  if (urlDatabase[req.params.shortURL]) {
+    res.render("urls_show", templateVars);
+  } else {
+    res.status(404).send('Page Not Found');
+  }
+  
 });
 
-
-
-// Send JSON string representing the entire urlDatabase object
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-//Send HTML
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
+// Use shortUrl to redirect the page to its corresonding website (longUrl)
+app.get("/u/:shortURL", (req, res) => {
+  const templateVars = {longURL: urlDatabase[req.params.shortURL] };
+  //If a client requests a non-existent shortURL
+  if (urlDatabase[req.params.shortURL]) {
+    res.redirect(templateVars.longURL);
+  } else {
+    res.status(404).send('Page Not Found');
+  }
 });
 
 app.listen(PORT, () => {
@@ -62,11 +65,11 @@ app.listen(PORT, () => {
 
 //Returns a string of 6 random alphanumeric characters
 function generateRandomString() {
-  let randomString = "";  
-  let letters ='abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let randomString = "";
+  let letters = 'abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-  for(let i = 0; i < 6; i++) {    
-     randomString += letters[Math.floor(Math.random() * letters.length)];
+  for (let i = 0; i < 6; i++) {
+    randomString += letters[Math.floor(Math.random() * letters.length)];
   }
   return randomString;
 }
