@@ -31,6 +31,12 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${random}`);
 });
 
+// Delete Url and redirect to urls page
+app.post("/urls/:shortURL/delete", (req, res) => {
+  delete urlDatabase[req.params.shortURL];
+  res.redirect("/urls");
+});
+
 // Render the page to add new url's
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
