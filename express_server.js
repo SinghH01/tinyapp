@@ -1,15 +1,18 @@
 // Require express library
 const express = require("express");
+const cookieParser = require('cookie-parser');
 const app = express();
-const PORT = 3001; // default port 8080
+const PORT = 8080; // default port 8080
 
 // Require body parser
 const bodyParser = require("body-parser");
+const { cookie } = require("request");
 app.use(bodyParser.urlencoded({extended: true}));
 
 // Set ejs as view engine
 app.set("view engine", "ejs");
 
+app.use(cookieParser());
 
 // URL Databse Object
 let urlDatabase = {
@@ -17,12 +20,21 @@ let urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-
 //Display all urls in browser
 app.get("/urls", (req, res) => {
-  const tempelateVars = {urls: urlDatabase};
+  const tempelateVars = {username: req.cookies.username, urls: urlDatabase};
   res.render("urls_index", tempelateVars);
 });
+
+app.post("/login", (req, res) => {
+  res.cookie('username', req.body.username)  
+  res.redirect('/urls');
+});
+
+app.post("/logout", (req, res) => {  
+  res.clearCookie("username");
+  res.redirect('/urls');
+})
 
 //Add new longURLS and it's corresponding randomly generated short url in database using form
 app.post("/urls", (req, res) => {
@@ -44,12 +56,13 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 
 // Render the page to add new url's
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const tempelateVars = {username: req.cookies.username}
+  res.render("urls_new", tempelateVars);
 });
 
 //To display single url and its shortened form
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = { username: req.cookies.username, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   //If a client requests a non-existent shortURL
   if (urlDatabase[req.params.shortURL]) {
     res.render("urls_show", templateVars);
@@ -61,7 +74,7 @@ app.get("/urls/:shortURL", (req, res) => {
 
 // Use shortUrl to redirect the page to its corresonding website (longUrl)
 app.get("/u/:shortURL", (req, res) => {
-  const templateVars = {longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = {username: req.cookies.username, longURL: urlDatabase[req.params.shortURL] };
   //If a client requests a non-existent shortURL
   if (urlDatabase[req.params.shortURL]) {
     res.redirect(templateVars.longURL);
