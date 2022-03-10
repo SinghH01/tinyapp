@@ -30,10 +30,15 @@ app.post("/urls", (req, res) => {
   urlDatabase[random] = req.body.longURL;
   res.redirect(`/urls/${random}`);
 });
-
+ 
 // Delete Url and redirect to urls page
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
+  res.redirect("/urls");
+});
+
+app.post("/urls/:shortURL/edit", (req, res) => {
+  urlDatabase[req.params.shortURL] = req.body.longURL;
   res.redirect("/urls");
 });
 
