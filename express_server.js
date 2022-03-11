@@ -13,9 +13,15 @@ app.set("view engine", "ejs");
 app.use(cookieParser());
 
 // URL Databse
-let urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+const urlDatabase = {
+  b6UTxQ: {
+        longURL: "https://www.tsn.ca",
+        userID: "aJ48lW"
+    },
+    i3BoGr: {
+        longURL: "https://www.google.ca",
+        userID: "aJ48lW"
+    }
 };
 
 //User Database
@@ -79,9 +85,14 @@ app.post("/logout", (req, res) => {
 
 //Add new longURLS and it's corresponding randomly generated short url in database using form
 app.post("/urls", (req, res) => {
-  let random = generateRandomString();
-  urlDatabase[random] = req.body.longURL;
-  res.redirect(`/urls/${random}`);
+  if(req.cookies.user_id) {   
+    let random = generateRandomString();
+    urlDatabase[random] = {longURL: req.body.longURL, userID: req.cookies.user_id}; 
+    console.log(urlDatabase);
+    res.redirect(`/urls/${random}`);
+  } else {
+    res.status(401).send("Error 403: Unauthorized");
+  }
 });
  
 // Delete Url and redirect to urls page
@@ -91,7 +102,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/urls/:shortURL/edit", (req, res) => {
-  urlDatabase[req.params.shortURL] = req.body.longURL;
+  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
   res.redirect("/urls");
 });
 
@@ -120,15 +131,20 @@ app.get("/login", (req, res) => {
 
 // Render the page to add new url's
 app.get("/urls/new", (req, res) => {
-  const templateVars = {user: users[req.cookies.user_id]};
-  res.render("urls_new", templateVars);
+  if(req.cookies.user_id) {
+    const templateVars = {user: users[req.cookies.user_id]};
+    res.render("urls_new", templateVars);
+  } else {    
+    res.redirect("/urls");
+  }
+
 });
 
 //To display single url and its shortened form
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { user: users[req.cookies.user_id], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   //If a client requests a non-existent shortURL
   if (urlDatabase[req.params.shortURL]) {
+    const templateVars = { user: users[req.cookies.user_id], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL };
     res.render("urls_show", templateVars);
   } else {
     res.status(404).send('Page Not Found');
@@ -138,15 +154,16 @@ app.get("/urls/:shortURL", (req, res) => {
 
 // Use shortUrl to redirect the page to its corresonding website (longUrl)
 app.get("/u/:shortURL", (req, res) => {
-  const templateVars = {user: users[req.cookies.user_id], longURL: urlDatabase[req.params.shortURL] };
   //If a client requests a non-existent shortURL
   if (urlDatabase[req.params.shortURL]) {
-    res.redirect(templateVars.longURL);
+      const templateVars = {user: users[req.cookies.user_id], longURL: urlDatabase[req.params.shortURL].longURL };
+      res.redirect(templateVars.longURL);
+
+    //Return error message if the id does not exist
   } else {
-    res.status(404).send('Page Not Found');
+    res.status(404).send('ID does not exist');
   }
 });
-
 
 
 app.listen(PORT, () => {
