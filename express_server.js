@@ -39,7 +39,7 @@ app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {  // Check if email or password is empty string
     res.status(404).send("Email or Password cannot be empty");
   } else {
-    let emailCheck = checkDuplicateEmail(req.body.email); // Check if email alreday exist's in users database
+    let emailCheck = checkDuplicateEmail(req.body.email); // Check if email already exist's in users database    
     if (emailCheck === false) {
       const randomID = generateRandomString();
       users[randomID] = {id: randomID, email: req.body.email, password: req.body.password};
@@ -52,11 +52,26 @@ app.post("/register", (req, res) => {
   }
 });
 
-app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  res.redirect('/urls');
+// Login Existing user
+app.post("/login", (req, res) => {  
+    if (req.body.email === "" || req.body.password === "") {  // Check if email or password is empty string
+      res.status(404).send("Email or Password cannot be empty");
+    } else { 
+      let userID = checkDuplicateEmail(req.body.email); // Check if email/password match with database
+      if(userID !== false){
+        if(users[userID].password === req.body.password){
+          res.cookie("user_id", userID);
+          res.redirect('/urls');
+        } else {
+          res.status(403).send("Incorrect Password");
+        }               
+      } else {
+        res.status(403).send("User does not exist. Please register first!");
+      }
+    }  
 });
 
+// Logout user and delete user_id cookie
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
   res.redirect('/urls');
@@ -92,6 +107,11 @@ app.get("/register", (req, res) => {
   const templateVars = {user: users[req.cookies.user_id]};
   res.render("urls_register", templateVars);
 });
+
+app.get("/login", (req, res) => {
+  const templateVars = {user: users[req.cookies.user_id]};
+  res.render("urls_login", templateVars);
+})
 
 // Render the page to add new url's
 app.get("/urls/new", (req, res) => {
@@ -139,11 +159,11 @@ function generateRandomString() {
   return randomString;
 }
 
-// Returns true if email already exist in users database
+// Returns UserID if email already exist in users database else returns false
 function checkDuplicateEmail(email) {
   for (const mail in users) {
     if (users[mail].email === email) {
-      return true;
+      return users[mail].id;
     }
   }
   return false;
