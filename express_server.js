@@ -98,19 +98,24 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 // GET Requests
 
 //Display all urls in browser
-app.get("/urls", (req, res) => {
+app.get("/urls", (req, res) => {  
   const templateVars = {user: users[req.cookies.user_id], urls: urlDatabase};
   res.render("urls_index", templateVars);
 });
 
-app.get("/register", (req, res) => {
+app.get("/register", (req, res) => {  
   const templateVars = {user: users[req.cookies.user_id]};
   res.render("urls_register", templateVars);
 });
 
 app.get("/login", (req, res) => {
-  const templateVars = {user: users[req.cookies.user_id]};
-  res.render("urls_login", templateVars);
+  if(req.cookies.user_id) { 
+    console.log("Redirected");  
+    res.redirect("/urls");
+  } else {
+    const templateVars = {user: users[req.cookies.user_id]};
+    res.render("urls_login", templateVars);
+  }
 })
 
 // Render the page to add new url's
