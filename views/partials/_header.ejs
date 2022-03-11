@@ -12,14 +12,16 @@
     </div>
     <!-- Check if username is available-->    
     <% if (!user) { %>    
+      <form class="form" action="/login" method="GET" style="padding-right:2%">
+        <button type="submit" class="btn btn-light">Login</button>               
+      </form>
       <form class="form" action="/register" method="GET">
-        <input class="form" type="text" name="username" placeholder="Username">
-        <button type="submit" class="btn btn-primary">register</button>        
+        <button type="submit" class="btn btn-dark">Register</button>               
       </form>
     <% } else { %>
-      <h5 style="padding-right: 1%;">Logged In As:  <%= user.email %> !</h5>
+      <h5 style="padding-right: 1%;">Logged in as:  <%= user.email %> !</h5>
       <form class="form" action="/logout" method="POST" >     
-        <button type="submit" class="btn btn-danger">Logout</button>
+        <button type="submit" class="btn btn-dark">Logout</button>
       </form>
     <% } %>
 
