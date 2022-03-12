@@ -1,19 +1,21 @@
-// Require required libraries
-const cookieSession = require('cookie-session')
+// Require libraries and helper functions
+const {getUserByEmail, generateRandomString, urlsForUser} = require("./helpers.js");
+const cookieSession = require('cookie-session'); // For encrypted cookies
 const express = require("express");
 const bodyParser = require("body-parser"); // Body parser
 const bcrypt = require('bcryptjs'); //Hashing password
+const app = express();
 // Set ejs as view engine
 app.set("view engine", "ejs");
 
-const app = express();
+
 const PORT = 8080; // default port 8080
 app.use(bodyParser.urlencoded({extended: true}));
 
 app.use(cookieSession({
   name: 'session',
   keys: ["key1", "key2"],
-}))
+}));
 
 // URL Databse
 const urlDatabase = {
@@ -24,14 +26,6 @@ const urlDatabase = {
   i3BoGr: {
     longURL: "https://www.google.ca",
     userID: "aJ48lW"
-  },
-  b6UTxA: {
-    longURL: "https://www.tsn.ca",
-    userID: "userRandomID"
-  },
-  b6UTxB: {
-    longURL: "https://www.tsn.ca",
-    userID: "userRandomID"
   },
 };
 
@@ -56,14 +50,14 @@ app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {  // Check if email or password is empty string
     res.status(404).send("Email or Password cannot be empty");
   } else {
-    let emailCheck = userByEmail(req.body.email); // Check if email already exist's in users database
-    if (emailCheck === false) {
+    let userID = getUserByEmail(req.body.email, users); // Check if email already exist's in users database
+    if (!userID) {
       const randomID = generateRandomString();
       users[randomID] = {id: randomID, email: req.body.email, password: bcrypt.hashSync(req.body.password, 10) }; // Hashing password
-      req.session.user_id = randomID;    
+      req.session.user_id = randomID;
       res.redirect('/urls');
     } else {
-      res.status(404).send("Email already exist!");
+      res.status(409).send("Email already exist!");
     }
   }
 });
@@ -73,17 +67,17 @@ app.post("/login", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {  // Check if email or password is empty string
     res.status(404).send("Email or Password cannot be empty");
   } else {
-    let userID = userByEmail(req.body.email); // Check if email/password match with database
-    if (userID !== false) {
+    let userID = getUserByEmail(req.body.email, users); // Check if email/password match with database
+    if (userID) {
       //Check if encrytped password matches the password entered by user
-      if (bcrypt.compareSync(req.body.password, users[userID].password)) {        
+      if (bcrypt.compareSync(req.body.password, users[userID].password)) {
         req.session.user_id = userID;
         res.redirect('/urls');
       } else {
         res.status(403).send("Incorrect Password");
       }
     } else {
-      res.status(403).send("User does not exist. Please register first!");
+      res.status(403).send("User does not exist. Please <a href='/register'>register</a> first!");
     }
   }
 });
@@ -98,7 +92,7 @@ app.post("/logout", (req, res) => {
 app.post("/urls", (req, res) => {
   if (req.session.user_id) {
     let random = generateRandomString();
-    urlDatabase[random] = {longURL: req.body.longURL, userID: req.session.user_id};    
+    urlDatabase[random] = {longURL: req.body.longURL, userID: req.session.user_id};
     res.redirect(`/urls/${random}`);
   } else {
     res.status(401).send("Error 401: Unauthorized");
@@ -107,24 +101,24 @@ app.post("/urls", (req, res) => {
  
 // Delete Url and redirect to urls page
 app.post("/urls/:shortURL/delete", (req, res) => {
-  let filteredObject = urlsForUser(req.session.user_id);
-    if(filteredObject[req.params.shortURL]) { 
-      delete urlDatabase[req.params.shortURL];
-      res.redirect("/urls");
-    } else {
-      res.status(401).send('Not authorized to delete this');
-    }
+  let filteredObject = urlsForUser(req.session.user_id, urlDatabase);
+  if (filteredObject[req.params.shortURL]) {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect("/urls");
+  } else {
+    res.status(401).send('Not authorized to delete this');
+  }
 });
 
 // Edit url
 app.post("/urls/:shortURL/edit", (req, res) => {
-  let filteredObject = urlsForUser(req.session.user_id);
-    if(filteredObject[req.params.shortURL]) { 
-      urlDatabase[req.params.shortURL].longURL = req.body.longURL;
-      res.redirect("/urls");
-    } else {
-      res.status(401).send('Not authorized to edit this');
-    }
+  let filteredObject = urlsForUser(req.session.user_id, urlDatabase);
+  if (filteredObject[req.params.shortURL]) {
+    urlDatabase[req.params.shortURL].longURL = req.body.longURL;
+    res.redirect("/urls");
+  } else {
+    res.status(401).send('Not authorized to edit this');
+  }
 
 });
 
@@ -132,12 +126,13 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 
 //Display all urls in browser
 app.get("/urls", (req, res) => {
-  if(req.session.user_id) {
-    let filteredObject = urlsForUser(req.session.user_id);
-    const templateVars = {user: users[req.session.user_id], urls: filteredObject};   
+  if (req.session.user_id) {
+    let filteredObject = urlsForUser(req.session.user_id, urlDatabase);
+    const templateVars = {user: users[req.session.user_id], urls: filteredObject};
     res.render("urls_index", templateVars);
   } else {
-    res.status(404).send('Login or register first');
+    const templateVars = {user: users[req.session.user_id]};  
+    res.status(401).send('401: Unauthorized access <br> User needs to <a href="/login">Login</a> or <a href="/register">Register</a> first !');
   }
 });
 
@@ -147,7 +142,7 @@ app.get("/register", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  if (req.session.user_id) {    
+  if (req.session.user_id) {
     res.redirect("/urls");
   } else {
     const templateVars = {user: users[req.session.user_id]};
@@ -171,16 +166,16 @@ app.get("/urls/:shortURL", (req, res) => {
   //If a client requests a non-existent shortURL
   if (urlDatabase[req.params.shortURL]) {
     //Only show the page(url) to logged in user
-    let filteredObject = urlsForUser(req.session.user_id);
-    if(filteredObject[req.params.shortURL]) {
+    let filteredObject = urlsForUser(req.session.user_id, urlDatabase);
+    if (filteredObject[req.params.shortURL]) {
       const templateVars = { user: users[req.session.user_id], shortURL: req.params.shortURL, longURL: filteredObject[req.params.shortURL].longURL };
       res.render("urls_show", templateVars);
     } else {
-      res.status(404).send('Please login or register first!');
+      res.status(401).send('401: Unauthorized access <br> User needs to <a href="/login">Login</a> or <a href="/register">Register</a> first !');
     }
   } else {
     res.status(404).send('URL does not exist!');
-  }  
+  }
 });
 
 // Use shortUrl to redirect the page to its corresonding website (longUrl)
@@ -199,34 +194,3 @@ app.get("/u/:shortURL", (req, res) => {
 app.listen(PORT, () => {
   console.log(`App listenig on port ${PORT}!`);
 });
-
-//Returns a string of 6 random alphanumeric characters
-function generateRandomString() {
-  let randomString = "";
-  let letters = 'abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-  for (let i = 0; i < 6; i++) {
-    randomString += letters[Math.floor(Math.random() * letters.length)];
-  }
-  return randomString;
-}
-
-// Returns UserID if email already exist in users database else returns false
-function userByEmail(email) {
-  for (const user in users) {
-    if (users[user].email === email) {
-      return users[user].id;
-    }
-  }
-  return false;
-}
-
-function urlsForUser(id) {
-  let userUrls = {};
-  for(const item in urlDatabase) {      
-    if(urlDatabase[item].userID === id){
-      userUrls[item] = {longURL: urlDatabase[item].longURL};            
-    }
-  }
-  return userUrls; 
-}
