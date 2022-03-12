@@ -5,6 +5,7 @@ const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser"); // Require body parser
 app.use(bodyParser.urlencoded({extended: true}));
+const bcrypt = require('bcryptjs'); //Hashing password
 //const { cookie } = require("request");
 
 // Set ejs as view engine
@@ -56,13 +57,12 @@ app.post("/register", (req, res) => {
     let emailCheck = checkDuplicateEmail(req.body.email); // Check if email already exist's in users database
     if (emailCheck === false) {
       const randomID = generateRandomString();
-      users[randomID] = {id: randomID, email: req.body.email, password: req.body.password};
-      res.cookie('user_id', randomID);
+      users[randomID] = {id: randomID, email: req.body.email, password: bcrypt.hashSync(req.body.password, 10) }; // Hashing password
+      res.cookie('user_id', randomID);     
       res.redirect('/urls');
     } else {
       res.status(404).send("Email already exist!");
     }
-
   }
 });
 
@@ -73,7 +73,8 @@ app.post("/login", (req, res) => {
   } else {
     let userID = checkDuplicateEmail(req.body.email); // Check if email/password match with database
     if (userID !== false) {
-      if (users[userID].password === req.body.password) {
+      //Check if encrytped password matches the password entered by user
+      if (bcrypt.compareSync(req.body.password, users[userID].password)) {
         res.cookie("user_id", userID);
         res.redirect('/urls');
       } else {
