@@ -1,7 +1,7 @@
 //HELPER FUNCTIONS
 
 // Returns UserID if email already exist in users database else returns false
-function getUserByEmail(email, database) {
+const getUserByEmail = function(email, database) {
   let userID;
   for (const user in database) {
     if (database[user].email === email) {
@@ -12,7 +12,7 @@ function getUserByEmail(email, database) {
 }
 
 //Returns a string of 6 random alphanumeric characters
-function generateRandomString() {
+const generateRandomString = function() {
   let randomString = "";
   let letters = 'abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -23,7 +23,7 @@ function generateRandomString() {
 }
 
 // Returns URLs from a specific user based on his user ID
-function urlsForUser(id, database) {
+const urlsForUser = function(id, database) {
   let userUrls = {};
   for (const item in database) {
     if (database[item].userID === id) {
