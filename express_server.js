@@ -49,7 +49,7 @@ let users = {
 // Save new user to database
 app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {  // Check if email or password is empty string
-    res.status(404).send("Email or Password cannot be empty");
+    res.status(400).send("Email or Password cannot be empty");
   } else {
     let userID = getUserByEmail(req.body.email, users); // Check if email already exist's in users database
     if (!userID) {
@@ -66,7 +66,7 @@ app.post("/register", (req, res) => {
 // Login User
 app.post("/login", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {  // Check if email or password is empty string
-    res.status(404).send("Email or Password cannot be empty");
+    res.status(400).send("Email or Password cannot be empty");
   } else {
     let userID = getUserByEmail(req.body.email, users); // Check if email/password match with database
     if (userID) {
