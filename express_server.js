@@ -1,10 +1,11 @@
-// Require libraries and helper functions
-const {getUserByEmail, generateRandomString, urlsForUser} = require("./helpers.js");
+// IMPORT
+const {getUserByEmail, generateRandomString, urlsForUser} = require("./helpers.js"); //Helper functions
 const cookieSession = require('cookie-session'); // For encrypted cookies
-const express = require("express");
+const express = require("express"); // Express framework
 const bodyParser = require("body-parser"); // Body parser
 const bcrypt = require('bcryptjs'); //Hashing password
 const app = express();
+
 // Set ejs as view engine
 app.set("view engine", "ejs");
 
@@ -131,7 +132,6 @@ app.get("/urls", (req, res) => {
     const templateVars = {user: users[req.session.user_id], urls: filteredObject};
     res.render("urls_index", templateVars);
   } else {
-    const templateVars = {user: users[req.session.user_id]};  
     res.status(401).send('401: Unauthorized access <br> User needs to <a href="/login">Login</a> or <a href="/register">Register</a> first !');
   }
 });
