@@ -54,7 +54,10 @@ app.post("/register", (req, res) => {
     let userID = getUserByEmail(req.body.email, users); // Check if email already exist's in users database
     if (!userID) {
       const randomID = generateRandomString();
-      users[randomID] = {id: randomID, email: req.body.email, password: bcrypt.hashSync(req.body.password, 10) }; // Hashing password
+      users[randomID] = {
+        id: randomID,
+        email: req.body.email,
+        password: bcrypt.hashSync(req.body.password, 10) }; // Hashing password
       req.session.user_id = randomID;
       res.redirect('/urls');
     } else {
@@ -92,9 +95,12 @@ app.post("/logout", (req, res) => {
 //Add new longURLS and it's corresponding randomly generated short url in database using form
 app.post("/urls", (req, res) => {
   if (req.session.user_id) {
-    let random = generateRandomString();
-    urlDatabase[random] = {longURL: req.body.longURL, userID: req.session.user_id};
-    res.redirect(`/urls/${random}`);
+    let shortUrl = generateRandomString();
+    urlDatabase[shortUrl] = {
+      longURL: req.body.longURL,
+      userID: req.session.user_id};
+      
+    res.redirect(`/urls/${shortUrl}`);
   } else {
     res.status(401).send("Error 401: Unauthorized");
   }
@@ -102,8 +108,8 @@ app.post("/urls", (req, res) => {
  
 // Delete Url and redirect to urls page
 app.post("/urls/:shortURL/delete", (req, res) => {
-  let filteredObject = urlsForUser(req.session.user_id, urlDatabase);
-  if (filteredObject[req.params.shortURL]) {
+  let urlsByThisUser = urlsForUser(req.session.user_id, urlDatabase);
+  if (urlsByThisUser[req.params.shortURL]) {
     delete urlDatabase[req.params.shortURL];
     res.redirect("/urls");
   } else {
@@ -113,8 +119,8 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 // Edit url
 app.post("/urls/:shortURL/edit", (req, res) => {
-  let filteredObject = urlsForUser(req.session.user_id, urlDatabase);
-  if (filteredObject[req.params.shortURL]) {
+  let urlsByThisUser = urlsForUser(req.session.user_id, urlDatabase);
+  if (urlsByThisUser[req.params.shortURL]) {
     urlDatabase[req.params.shortURL].longURL = req.body.longURL;
     res.redirect("/urls");
   } else {
@@ -128,8 +134,8 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 //Display all urls in browser
 app.get("/urls", (req, res) => {
   if (req.session.user_id) {
-    let filteredObject = urlsForUser(req.session.user_id, urlDatabase);
-    const templateVars = {user: users[req.session.user_id], urls: filteredObject};
+    let urlsByThisUser = urlsForUser(req.session.user_id, urlDatabase);
+    const templateVars = {user: users[req.session.user_id], urls: urlsByThisUser};
     res.render("urls_index", templateVars);
   } else {
     res.status(401).send('401: Unauthorized access <br> User needs to <a href="/login">Login</a> or <a href="/register">Register</a> first !');
@@ -166,9 +172,12 @@ app.get("/urls/:shortURL", (req, res) => {
   //If a client requests a non-existent shortURL
   if (urlDatabase[req.params.shortURL]) {
     //Only show the page(url) to logged in user
-    let filteredObject = urlsForUser(req.session.user_id, urlDatabase);
-    if (filteredObject[req.params.shortURL]) {
-      const templateVars = { user: users[req.session.user_id], shortURL: req.params.shortURL, longURL: filteredObject[req.params.shortURL].longURL };
+    let urlsByThisUser = urlsForUser(req.session.user_id, urlDatabase);
+    if (urlsByThisUser[req.params.shortURL]) {
+      const templateVars = {
+        user: users[req.session.user_id],
+        shortURL: req.params.shortURL,
+        longURL: urlsByThisUser[req.params.shortURL].longURL };
       res.render("urls_show", templateVars);
     } else {
       res.status(401).send('401: Unauthorized access <br> User needs to <a href="/login">Login</a> or <a href="/register">Register</a> first !');
@@ -182,7 +191,9 @@ app.get("/urls/:shortURL", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   //If a client requests a non-existent shortURL
   if (urlDatabase[req.params.shortURL]) {
-    const templateVars = {user: users[req.session.user_id], longURL: urlDatabase[req.params.shortURL].longURL };
+    const templateVars = {
+      user: users[req.session.user_id],
+      longURL: urlDatabase[req.params.shortURL].longURL };
     res.redirect(templateVars.longURL);
     //Return error message if the id does not exist
   } else {
